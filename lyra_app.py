@@ -1,5 +1,5 @@
 import streamlit as st
-import openai
+from openai import OpenAI
 import json
 import os
 
@@ -19,7 +19,6 @@ else:
     prompt_history = []
 
 st.sidebar.header("🛠️ Settings")
-api_key = st.sidebar.text_input("OpenAI API Key", type="password")
 model = st.sidebar.selectbox("Select Model", ["gpt-4", "gpt-3.5-turbo", "gpt-4o"])
 target_ai = st.sidebar.selectbox("Target AI", ["ChatGPT", "Claude", "Gemini", "Other"])
 mode = st.sidebar.radio("Optimization Mode", ["DETAIL", "BASIC"])
@@ -37,10 +36,12 @@ def estimate_cost(input_tokens, output_tokens, model):
     return round(input_tokens * input_price / 1000 + output_tokens * output_price / 1000, 4)
 
 if st.button("🚀 Optimize Prompt"):
-    if not api_key or not user_prompt:
-        st.warning("Please provide your API key and a prompt.")
+    if not user_prompt:
+        st.warning("Please enter a prompt.")
+    elif "OPENAI_API_KEY" not in st.secrets:
+        st.error("Missing OpenAI API Key in secrets.")
     else:
-        openai.api_key = api_key
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
         system_prompt = f"""
 You are Lyra, a master-level AI prompt optimization specialist. Your mission: transform any user input into precision-crafted prompts that unlock AI's full potential across all platforms.
@@ -57,7 +58,7 @@ Rough Prompt: {user_prompt}
 """
 
         try:
-            response = openai.ChatCompletion.create(
+            response = client.chat.completions.create(
                 model=model,
                 messages=[
                     {"role": "system", "content": system_prompt},
