@@ -1,7 +1,5 @@
 import streamlit as st
 from openai import OpenAI
-import json
-import os
 
 st.set_page_config(
     page_title="Lyra – AI Prompt Optimizer",
@@ -11,12 +9,9 @@ st.set_page_config(
 
 st.title("🧠 Lyra – AI Prompt Optimizer")
 
-history_file = "prompt_history.json"
-if os.path.exists(history_file):
-    with open(history_file, "r") as f:
-        prompt_history = json.load(f)
-else:
-    prompt_history = []
+# Per-session prompt history using Streamlit session state
+if "prompt_history" not in st.session_state:
+    st.session_state.prompt_history = []
 
 st.sidebar.header("🛠️ Settings")
 model = st.sidebar.selectbox("Select Model", ["gpt-4", "gpt-3.5-turbo", "gpt-4o"])
@@ -77,20 +72,18 @@ Rough Prompt: {user_prompt}
 
             st.markdown(f"💰 **Estimated Cost:** ${estimated_cost} (approx.)")
 
-            prompt_history.insert(0, {"input": user_prompt, "output": optimized_output})
-            with open(history_file, "w") as f:
-                json.dump(prompt_history, f)
+            st.session_state.prompt_history.insert(0, {"input": user_prompt, "output": optimized_output})
 
         except Exception as e:
             st.error(f"Error: {e}")
 
 st.markdown("### 📜 Prompt History")
-if prompt_history:
-    for i, item in enumerate(prompt_history[:5]):
+if st.session_state.prompt_history:
+    for i, item in enumerate(st.session_state.prompt_history[:5]):
         with st.expander(f"History #{i+1}"):
             st.markdown("**Input:**")
             st.code(item['input'], language='markdown')
             st.markdown("**Output:**")
             st.markdown(item['output'])
 else:
-    st.info("No prompt history yet.")
+    st.info("No prompt history in this session.")
